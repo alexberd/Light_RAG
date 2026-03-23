@@ -54,6 +54,6 @@ python -m rag query "your phrase" --doc-id mydoc
 
 The CLI prints each hit with a similarity **score** and the **chunk text** stored in Qdrant (payload includes `doc_id`, `chunk_index`, and `content`).
 
-## OpenAI embeddings
+## OpenAI embeddings (Optional)
 
 Set `EMBEDDING_PROVIDER=openai`, provide `OPENAI_API_KEY`, and optionally `OPENAI_EMBEDDING_MODEL` (default `text-embedding-3-large`). The project expects **1024-dimensional** vectors to match the Qdrant collection configuration.
