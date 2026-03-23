@@ -42,7 +42,7 @@ def ingest(
         return 0
 
     embedder = get_embedder(s.embedding_provider, s)
-    vectors = [embedder.embed(c) for c in chunks]
+    vectors = [embedder.embed(c, for_query=False) for c in chunks]
 
     client = get_client(s)
     ensure_collection(client, s.qdrant_collection)
@@ -65,7 +65,7 @@ def retrieve(
     s = settings or get_settings()
     lim = limit if limit is not None else s.retrieve_limit
     embedder = get_embedder(s.embedding_provider, s)
-    q_vec = embedder.embed(query)
+    q_vec = embedder.embed(query, for_query=True)
 
     client = get_client(s)
     rows = search(client, s.qdrant_collection, q_vec, lim, doc_id=doc_id)

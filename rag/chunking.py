@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-import re
+import re, os
+from dotenv import load_dotenv
 
 from rag.tokenizers import ChunkTokenizer
 
 _SENTENCE_END = re.compile(r"(?<=[.!?])(?:\s+|$)")
 
+load_dotenv()
 
 def _sentence_end_char_positions(text: str) -> list[int]:
     """Character offsets in `text` immediately after sentence-ending punctuation."""
@@ -34,8 +36,8 @@ def _token_boundaries_for_sentence_ends(
 def chunk_text(
     text: str,
     tokenizer: ChunkTokenizer,
-    chunk_size: int = 512,
-    overlap: int = 50,
+    chunk_size: int = int(os.getenv("CHUNK_SIZE", 500)), #512,
+    overlap: int = int(os.getenv("CHUNK_OVERLAP", 50)), #50,
 ) -> list[str]:
     """
     Sentence-aware chunking: prefer ends at sentence boundaries; if no boundary

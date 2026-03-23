@@ -18,9 +18,9 @@ class Settings:
     openai_api_key: str | None
     openai_embedding_model: str
     local_embedding_model: str
-    chunk_size: int = 512
-    chunk_overlap: int = 50
-    retrieve_limit: int = 3
+    chunk_size: int = int(os.getenv("CHUNK_SIZE", 500)), #512,
+    chunk_overlap: int = int(os.getenv("CHUNK_OVERLAP", 50)), #50,
+    retrieve_limit: int = int(os.getenv("RETRIEVE_LIMIT", 10)), #3
 
 
 def get_settings() -> Settings:
@@ -49,7 +49,7 @@ def get_settings() -> Settings:
             "OPENAI_EMBEDDING_MODEL", "text-embedding-3-large"
         ),
         local_embedding_model=os.getenv(
-            "LOCAL_EMBEDDING_MODEL", "BAAI/bge-large-en-v1.5"
+            "LOCAL_EMBEDDING_MODEL", "BAAI/bge-m3"
         ),
         chunk_size=int(os.getenv("CHUNK_SIZE", "512")),
         chunk_overlap=int(os.getenv("CHUNK_OVERLAP", "50")),

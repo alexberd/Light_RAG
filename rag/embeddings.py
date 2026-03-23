@@ -21,8 +21,23 @@ def l2_normalize(vec: list[float]) -> list[float]:
 
 @runtime_checkable
 class Embedder(Protocol):
-    def embed(self, text: str) -> list[float]:
+    def embed(self, text: str, *, for_query: bool = False) -> list[float]:
         ...
+
+
+# BAAI/bge-m3 dense retrieval prompts (https://huggingface.co/BAAI/bge-m3)
+_BGE_M3_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
+_BGE_M3_DOC_PREFIX = "Represent this document for retrieval: "
+
+
+def _flatten_embedding_vector(v: object) -> list[float]:
+    """Sentence-transformers may return (dim,) or (1, dim); normalize to a flat list."""
+    arr = np.asarray(v, dtype=np.float64)
+    if arr.ndim == 2 and arr.shape[0] == 1:
+        arr = arr.reshape(-1)
+    if arr.ndim != 1:
+        raise ValueError(f"Expected 1-D embedding, got shape {arr.shape}")
+    return arr.tolist()
 
 
 class OpenAIEmbedder:
@@ -32,7 +47,7 @@ class OpenAIEmbedder:
         self._client = OpenAI(api_key=api_key)
         self._model = model
 
-    def embed(self, text: str) -> list[float]:
+    def embed(self, text: str, *, for_query: bool = False) -> list[float]:
         r = self._client.embeddings.create(
             model=self._model,
             input=text,
@@ -48,17 +63,32 @@ class LocalEmbedder:
     def __init__(self, model_name: str) -> None:
         from sentence_transformers import SentenceTransformer
 
+        self._model_name = model_name
+        self._use_bge_m3_prompts = "bge-m3" in model_name.lower()
         self._model = SentenceTransformer(model_name)
 
-    def embed(self, text: str) -> list[float]:
+    def _prepare_text(self, text: str, *, for_query: bool) -> str:
+        if self._use_bge_m3_prompts:
+            return (
+                _BGE_M3_QUERY_PREFIX + text
+                if for_query
+                else _BGE_M3_DOC_PREFIX + text
+            )
+        return text
+
+    def embed(self, text: str, *, for_query: bool = False) -> list[float]:
+        to_encode = self._prepare_text(text, for_query=for_query)
         v = self._model.encode(
-            text,
+            to_encode,
             normalize_embeddings=True,
             show_progress_bar=False,
         )
-        vec = v.tolist() if hasattr(v, "tolist") else list(v)  # type: ignore[arg-type]
+        vec = _flatten_embedding_vector(v)
         if len(vec) != EMBED_DIM:
-            raise ValueError(f"Expected {EMBED_DIM} dimensions, got {len(vec)}")
+            raise ValueError(
+                f"Expected {EMBED_DIM} dimensions, got {len(vec)} "
+                f"(model={self._model_name!r})"
+            )
         return l2_normalize(vec)
 
 
